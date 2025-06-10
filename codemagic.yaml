@@ -4,8 +4,8 @@ workflows:
     max_build_duration: 60
     environment:
       vars:
-        XCODE_PROJECT_PATH: "src/YourApp.xcworkspace"  # or src/YourApp.xcodeproj
-        XCODE_SCHEME: "YourApp"
+        XCODE_PROJECT_PATH: "src/CDGamez.xcworkspace"  # or src/YourApp.xcodeproj
+        XCODE_SCHEME: "CDGamez"
         CODE_SIGNING_ALLOWED: "NO"
       xcode: 15.0
       cocoapods: default

@@ -15,8 +15,8 @@ jobs:
 
     - name: List Xcode schemes
       run: |
-      cd src
-      xcodebuild -list -project CDGamez.xcodeproj # Or -workspace your_workspace_name.xcworkspace
+        cd src
+        xcodebuild -list -project CDGamez.xcodeproj # Or -workspace your_workspace_name.xcworkspace
       # Replace 'your_project_name.xcodeproj' or 'your_workspace_name.xcworkspace' with your actual project/workspace file name.
       # This step helps you identify the correct scheme name.
 

@@ -1,0 +1,40 @@
+workflows:
+  ios-build-no-signing:
+    name: Build iOS App (No Signing)
+    max_build_duration: 60
+    environment:
+      vars:
+        XCODE_PROJECT_PATH: "src/YourApp.xcworkspace"  # or src/YourApp.xcodeproj
+        XCODE_SCHEME: "YourApp"
+      xcode: 15.0
+      cocoapods: default
+      env:
+        CODE_SIGNING_ALLOWED: "NO"
+    scripts:
+      - name: Install CocoaPods (if needed)
+        script: |
+          if [ -f "src/Podfile" ]; then
+            gem install cocoapods || true
+            pod install --project-directory=src
+          fi
+
+      - name: Clean & Archive (no signing)
+        script: |
+          xcodebuild clean archive \
+            -workspace "$XCODE_PROJECT_PATH" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphoneos \
+            -archivePath "$HOME/build/$XCODE_SCHEME.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export IPA (no signing)
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath "$HOME/build/$XCODE_SCHEME.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$HOME/build/ipa"
+
+    artifacts:
+      - build/ipa/*.ipa
+      - $HOME/build/ipa/*.ipa
+      - $HOME/build/**/*.dSYM

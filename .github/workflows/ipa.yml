@@ -27,6 +27,7 @@ jobs:
       - name: Validate storyboard files exist and have correct case
         run: |
           cd src
+          pwd
           if [ ! -f CDGamez/Base.lproj/Main.storyboard ]; then
             echo "Main.storyboard not found! Please check the path and case sensitivity."
             exit 1

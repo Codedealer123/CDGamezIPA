@@ -8,25 +8,32 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      # Import your code signing cert and provisioning profile
-      - name: Import certificates and provisioning profile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install code signing certificate from base64
+      - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v1
         with:
           p12-file-base64: ${{ secrets.CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.CERTIFICATE_PASSWORD }}
-          provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
 
-      # Install dependencies (if using CocoaPods)
-      - name: Install CocoaPods dependencies
+      # Decode and install provisioning profile
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/CDGamez.mobileprovision
+
+      # Install CocoaPods dependencies
+      - name: Install pods
         run: |
           cd src
           pod install
 
-      # Build and archive the app with automatic signing enabled
-      - name: Build and archive
+      # Build and archive
+      - name: Build archive
         run: |
           xcodebuild archive \
             -workspace src/CDGamez.xcworkspace \
@@ -35,7 +42,7 @@ jobs:
             -archivePath ${{ github.workspace }}/build/CDGamez.xcarchive \
             -allowProvisioningUpdates
 
-      # Export the IPA file
+      # Export IPA
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
@@ -44,19 +51,20 @@ jobs:
             -exportPath ${{ github.workspace }}/build/IPA \
             -allowProvisioningUpdates
 
-      # Upload IPA as artifact (optional)
+      # Upload IPA (optional)
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: CDGamez-IPA
           path: build/IPA/*.ipa
 
-      # Push IPA to a dedicated branch named IPA
+      # Push to IPA branch
       - name: Push IPA to IPA branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b IPA || git checkout IPA
+          git fetch
+          git switch -C IPA
           mkdir -p ipa_build
           cp build/IPA/*.ipa ipa_build/
           git add ipa_build/*.ipa

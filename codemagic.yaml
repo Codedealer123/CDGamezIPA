@@ -11,11 +11,21 @@ workflows:
       cocoapods: default
     scripts:
       - name: Install CocoaPods (if needed)
-        script: |
-          if [ -f "src/Podfile" ]; then
-            gem install cocoapods || true
-            pod install --project-directory=src
-          fi
+  script: |
+    if [ -f "src/Podfile" ]; then
+      if ! gem list -i cocoapods > /dev/null 2>&1; then
+        echo "Installing CocoaPods gem..."
+        gem install cocoapods
+      else
+        echo "CocoaPods gem already installed"
+      fi
+      echo "Running pod install..."
+      cd src
+      pod install
+    else
+      echo "No Podfile found, skipping CocoaPods install"
+    fi
+
 
       - name: Clean & Archive (no signing)
         script: |

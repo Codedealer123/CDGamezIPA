@@ -16,6 +16,16 @@ jobs:
       - name: Install CocoaPods dependencies
         run: cd src && pod install
 
+      - name: Build and archive
+        run: |
+          xcodebuild -workspace src/CDGamez.xcworkspace \
+          -scheme CDGamez \
+          -configuration Release \
+          -archivePath ${{ runner.temp }}/CDGamez.xcarchive \
+          DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+          clean archive
+
+
       - name: Build the app and archive
         run: |
           cd src

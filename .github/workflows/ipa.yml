@@ -8,48 +8,57 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
+      # Import your code signing cert and provisioning profile
+      - name: Import certificates and provisioning profile
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.CERTIFICATE_PASSWORD }}
+          provisioning-profile-base64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+
+      # Install dependencies (if using CocoaPods)
       - name: Install CocoaPods dependencies
-        run: cd src && pod install
+        run: |
+          cd src
+          pod install
 
+      # Build and archive the app with automatic signing enabled
       - name: Build and archive
         run: |
-          xcodebuild -workspace src/CDGamez.xcworkspace \
-          -scheme CDGamez \
-          -configuration Release \
-          -archivePath ${{ runner.temp }}/CDGamez.xcarchive \
-          DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
-          clean archive
+          xcodebuild archive \
+            -workspace src/CDGamez.xcworkspace \
+            -scheme CDGamez \
+            -configuration Release \
+            -archivePath ${{ github.workspace }}/build/CDGamez.xcarchive \
+            -allowProvisioningUpdates
 
-
-      - name: Build the app and archive
+      # Export the IPA file
+      - name: Export IPA
         run: |
-          cd src
-          xcodebuild -scheme CDGamez -workspace CDGamez.xcworkspace -configuration Release -archivePath $PWD/build/CDGamez.xcarchive archive
+          xcodebuild -exportArchive \
+            -archivePath ${{ github.workspace }}/build/CDGamez.xcarchive \
+            -exportOptionsPlist src/exportOptions.plist \
+            -exportPath ${{ github.workspace }}/build/IPA \
+            -allowProvisioningUpdates
 
-      - name: Export the archive to IPA
-        run: |
-          cd src
-          xcodebuild -exportArchive -archivePath $PWD/build/CDGamez.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath $PWD/build
-
+      # Upload IPA as artifact (optional)
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: CDGamez-IPA
-          path: src/build/*.ipa
+          path: build/IPA/*.ipa
 
-      - name: Commit and push IPA to IPA branch
+      # Push IPA to a dedicated branch named IPA
+      - name: Push IPA to IPA branch
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b IPA || git checkout IPA
-          cp src/build/*.ipa .
-          git add *.ipa
-          git commit -m "Add latest IPA from build ${{ github.run_number }}" || echo "No changes to commit"
+          mkdir -p ipa_build
+          cp build/IPA/*.ipa ipa_build/
+          git add ipa_build/*.ipa
+          git commit -m "Add latest IPA build"
           git push origin IPA --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

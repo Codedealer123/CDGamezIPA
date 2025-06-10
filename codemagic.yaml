@@ -13,16 +13,16 @@ workflows:
         script: |
           if [ -f "src/Podfile" ]; then
             if ! gem list -i cocoapods > /dev/null 2>&1; then
-              echo "Installing CocoaPods gem..."
+              echo "Installing CocoaPods..."
               gem install cocoapods
             else
               echo "CocoaPods already installed"
             fi
-            cd CDGamez
+            cd src
             pod install
             cd ..
           else
-            echo "No Podfile found. Skipping pod install."
+            echo "No Podfile found, skipping pod install."
           fi
 
       - name: Clean & Archive (no signing)

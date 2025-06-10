@@ -1,40 +1,29 @@
 workflows:
-  ios-build-no-signing:
-    name: Build iOS App (No Signing)
+  ios-pods-build-no-signing:
+    name: iOS CocoaPods Build (No Signing)
     max_build_duration: 60
     environment:
       vars:
-        XCODE_PROJECT_PATH: "src/CDGamez.xcodeproj"
+        XCODE_WORKSPACE_PATH: "src/CDGamez.xcworkspace"
         XCODE_SCHEME: "CDGamez"
-        CODE_SIGNING_ALLOWED: "NO"
       xcode: 15.0
     scripts:
-      - name: Install CocoaPods (if needed)
+      - name: Install CocoaPods & Generate .xcworkspace
         script: |
-          if [ -f "src/Podfile" ]; then
-            if ! gem list -i cocoapods > /dev/null 2>&1; then
-              echo "Installing CocoaPods..."
-              gem install cocoapods
-            else
-              echo "CocoaPods already installed"
-            fi
-            cd src
-            pod install
-            cd ..
-          else
-            echo "No Podfile found, skipping pod install."
-          fi
+          cd src
+          pod install
+          cd ..
 
-      - name: Clean & Archive (no signing)
+      - name: Build Archive (No Signing)
         script: |
           xcodebuild clean archive \
-            -project "$XCODE_PROJECT_PATH" \
+            -workspace "$XCODE_WORKSPACE_PATH" \
             -scheme "$XCODE_SCHEME" \
             -sdk iphoneos \
             -archivePath "$HOME/build/$XCODE_SCHEME.xcarchive" \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Export IPA (no signing)
+      - name: Export IPA (No Signing)
         script: |
           xcodebuild -exportArchive \
             -archivePath "$HOME/build/$XCODE_SCHEME.xcarchive" \
@@ -42,6 +31,5 @@ workflows:
             -exportPath "$HOME/build/ipa"
 
     artifacts:
-      - build/ipa/*.ipa
       - $HOME/build/ipa/*.ipa
       - $HOME/build/**/*.dSYM

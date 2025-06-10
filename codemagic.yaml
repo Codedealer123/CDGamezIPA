@@ -4,28 +4,28 @@ workflows:
     max_build_duration: 60
     environment:
       vars:
-        XCODE_PROJECT_PATH: "src/CDGamez.xcworkspace"  # or src/YourApp.xcodeproj
-        XCODE_SCHEME: "CDGamez"
+        XCODE_PROJECT_PATH: "src/YourApp.xcworkspace"  # or src/YourApp.xcodeproj
+        XCODE_SCHEME: "YourApp"
         CODE_SIGNING_ALLOWED: "NO"
       xcode: 15.0
       cocoapods: default
     scripts:
       - name: Install CocoaPods (if needed)
-  script: |
-    if [ -f "src/Podfile" ]; then
-      if ! gem list -i cocoapods > /dev/null 2>&1; then
-        echo "Installing CocoaPods gem..."
-        gem install cocoapods
-      else
-        echo "CocoaPods gem already installed"
-      fi
-      echo "Running pod install..."
-      cd src
-      pod install
-    else
-      echo "No Podfile found, skipping CocoaPods install"
-    fi
-
+        script: |
+          if [ -f "src/Podfile" ]; then
+            if ! gem list -i cocoapods > /dev/null 2>&1; then
+              echo "Installing CocoaPods gem..."
+              gem install cocoapods
+            else
+              echo "CocoaPods gem already installed"
+            fi
+            echo "Running pod install..."
+            cd src
+            pod install
+            cd ..
+          else
+            echo "No Podfile found, skipping CocoaPods install"
+          fi
 
       - name: Clean & Archive (no signing)
         script: |

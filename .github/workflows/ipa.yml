@@ -1,0 +1,75 @@
+name: Build and Export IPA to IPA branch
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-export:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # Needed to push branches
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      - name: Install CocoaPods
+        run: gem install cocoapods
+
+      - name: Install Pods
+        run: pod install
+
+      - name: Clean build folder
+        run: rm -rf build
+
+      - name: Build archive
+        run: |
+          xcodebuild archive \
+            -workspace CDGamez.xcworkspace \
+            -scheme CDGamez \
+            -configuration Release \
+            -archivePath $PWD/build/CDGamez.xcarchive \
+            -sdk iphoneos \
+            DEVELOPMENT_TEAM=YOUR_TEAM_ID CODE_SIGN_STYLE=Automatic
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $PWD/build/CDGamez.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath $PWD/build
+
+      - name: Set up git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout IPA branch or create if not exists
+        run: |
+          git fetch origin IPA || true
+          if git show-ref --quiet refs/heads/IPA; then
+            git checkout IPA
+          else
+            git checkout -b IPA
+          fi
+
+      - name: Clean IPA branch
+        run: |
+          git rm -r * || true
+
+      - name: Copy IPA files
+        run: |
+          cp -r build/* .
+
+      - name: Commit and push IPA files
+        run: |
+          git add .
+          git commit -m "Update IPA build from workflow"
+          git push origin IPA --force

@@ -13,16 +13,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Go to src dir
-      run: cd src
-
     - name: List Xcode schemes
-      run: xcodebuild -list -project CDGamez.xcodeproj # Or -workspace your_workspace_name.xcworkspace
+      run: |
+      cd src
+      xcodebuild -list -project CDGamez.xcodeproj # Or -workspace your_workspace_name.xcworkspace
       # Replace 'your_project_name.xcodeproj' or 'your_workspace_name.xcworkspace' with your actual project/workspace file name.
       # This step helps you identify the correct scheme name.
 
     - name: Archive the project without code signing
       run: |
+        cd src
         xcodebuild archive \
           -project CDGamez.xcodeproj \
           -scheme CDGamez \
@@ -32,9 +32,6 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
           -destination generic/platform=iOS \
-      # Replace 'your_project_name.xcodeproj' or 'your_workspace_name.xcworkspace' with your actual project/workspace file name.
-      # Replace 'your_scheme_name' with the scheme identified in the previous step.
-      # CODE_SIGN_IDENTITY="", CODE_SIGNING_REQUIRED=NO, and CODE_SIGNING_ALLOWED=NO disable code signing.
 
     - name: Create the unsigned IPA
       run: |

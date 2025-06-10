@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
     environment:
       vars:
-        XCODE_PROJECT_PATH: "src/CDGamez.xcproj"  # or src/YourApp.xcodeproj
+        XCODE_PROJECT_PATH: "src/CDGamez.xcodeproj"  # or src/YourApp.xcodeproj
         XCODE_SCHEME: "CDGamez"
         CODE_SIGNING_ALLOWED: "NO"
       xcode: 15.0

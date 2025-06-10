@@ -1,72 +1,48 @@
-name: Build and Export IPA
+name: Build Unsigned IPA
 
 on:
   push:
     branches:
-      - main
+      - main  # Or your desired branch (e.g., development, release)
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-latest  # Use a macOS runner for Xcode builds
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      # Install code signing certificate from base64
-      - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v1
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATE_BASE64 }}
-          p12-password: ${{ secrets.CERTIFICATE_PASSWORD }}
+    - name: List Xcode schemes
+      run: xcodebuild -list -project your_project_name.xcodeproj # Or -workspace your_workspace_name.xcworkspace
+      # Replace 'your_project_name.xcodeproj' or 'your_workspace_name.xcworkspace' with your actual project/workspace file name.
+      # This step helps you identify the correct scheme name.
 
-      # Decode and install provisioning profile
-      - name: Install provisioning profile
-        run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/CDGamez.mobileprovision
+    - name: Archive the project without code signing
+      run: |
+        xcodebuild archive \
+          -project CDGamez.xcodeproj  # Or -workspace your_workspace_name.xcworkspace
+          -scheme CDGamez \
+          -archivePath build/unsigned.xcarchive \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          # Consider adding '-destination generic/platform=iOS' if building for a generic device rather than a specific one
+      # Replace 'your_project_name.xcodeproj' or 'your_workspace_name.xcworkspace' with your actual project/workspace file name.
+      # Replace 'your_scheme_name' with the scheme identified in the previous step.
+      # CODE_SIGN_IDENTITY="", CODE_SIGNING_REQUIRED=NO, and CODE_SIGNING_ALLOWED=NO disable code signing.
 
-      # Install CocoaPods dependencies
-      - name: Install pods
-        run: |
-          cd src
-          pod install
+    - name: Create the unsigned IPA
+      run: |
+        cd build/unsigned.xcarchive/Products
+        mv Applications Payload
+        zip -r unsigned.ipa Payload
+      # This sequence of commands navigates to the archive, renames the 'Applications' folder to 'Payload', and zips it to create the IPA.
 
-      # Build and archive
-      - name: Build archive
-        run: |
-          xcodebuild archive \
-            -workspace src/CDGamez.xcworkspace \
-            -scheme CDGamez \
-            -configuration Release \
-            -archivePath ${{ github.workspace }}/build/CDGamez.xcarchive \
-            -allowProvisioningUpdates
-
-      # Export IPA
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath ${{ github.workspace }}/build/CDGamez.xcarchive \
-            -exportOptionsPlist src/exportOptions.plist \
-            -exportPath ${{ github.workspace }}/build/IPA \
-            -allowProvisioningUpdates
-
-      # Upload IPA (optional)
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: CDGamez-IPA
-          path: build/IPA/*.ipa
-
-      # Push to IPA branch
-      - name: Push IPA to IPA branch
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch
-          git switch -C IPA
-          mkdir -p ipa_build
-          cp build/IPA/*.ipa ipa_build/
-          git add ipa_build/*.ipa
-          git commit -m "Add latest IPA build"
-          git push origin IPA --force
+    - name: Upload unsigned IPA as artifact
+      uses: actions/upload-artifact@v4  # Use v4 for better performance and artifact validation
+      with:
+        name: unsigned-ipa
+        path: build/unsigned.ipa
+      # This action uploads the generated unsigned.ipa file as a build artifact for download.
